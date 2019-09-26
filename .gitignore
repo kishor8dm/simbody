@@ -1,4 +1,6 @@
 # Debian packaging output.
+.idea/
+cmake-build-debug
 debian/libsimbody-dev
 debian/libsimbody-doc
 debian/libsimbody3.3
