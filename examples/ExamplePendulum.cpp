@@ -35,65 +35,68 @@ using namespace SimTK;
 using std::cout; using std::endl;
 
 int main() {
-  try {
-      Quaternion q0(-0.1504133023, -0.7202261496,  0.6643972918,  0.1312492688);
-      Quaternion q1(-0.8802997333,  -0.4219333635,  -0.1958447339, -0.09321725385);
-      Quaternion q2(0.1707965794, -0.1900937466, -0.1176534344, -0.9596095901);
-      Quaternion q3(0.3201724846,  0.7169894904,  0.3068382102, -0.5378345131);
-      Quaternion eye(1, 0, 0, 0);
-      Quaternion halfPi(0.7071067691, 0.7071067691, 0, 0);
-    // Create the system, with subsystems for the bodies and some forces.
-    MultibodySystem system;
-    SimbodyMatterSubsystem matter(system);
-    GeneralForceSubsystem forces(system);
+    try {
+        Quaternion q0(-0.1504133023, -0.7202261496,  0.6643972918,  0.1312492688);
+        Quaternion q1(-0.8802997333,  -0.4219333635,  -0.1958447339, -0.09321725385);
+        Quaternion q2(0.1707965794, -0.1900937466, -0.1176534344, -0.9596095901);
+        Quaternion q3(0.3201724846,  0.7169894904,  0.3068382102, -0.5378345131);
+        Quaternion q4(-0.2366251647, 0.3815343678,  0.845472455,   0.28916502);
+        Quaternion q5(-0.8099961877, 0.09318492562,  0.5701901317, -0.1005286202);
+        Quaternion q6(0.09452920407, -0.6611310244, -0.5389370918, -0.5133388638);
+        Quaternion q7(-0.06702885032, -0.7941805124,   -0.17857261,  0.5769716501);
+        Quaternion eye(1, 0, 0, 0);
+        Quaternion halfPi(0.7071067691, 0.7071067691, 0, 0);
+        // Create the system, with subsystems for the bodies and some forces.
+        MultibodySystem system;
+        SimbodyMatterSubsystem matter(system);
+        GeneralForceSubsystem forces(system);
+        Force::UniformGravity gravity(forces, matter, Vec3(0, Real(0.0), 0));
+        Body::Rigid pendulumBody(MassProperties(1.0, Vec3(0), Inertia(1)));
+        pendulumBody.addDecoration(Transform(),DecorativeSphere(Real(0.1)).setColor(Red));
 
-    // Add gravity as a force element.
-    Rotation x45(Pi/4, XAxis);
-    Rotation y45(Pi/4, YAxis);
-    Rotation z45(Pi/4, ZAxis);
-    Force::UniformGravity gravity(forces, matter, Vec3(0, Real(0.0), 0));
-    // Create the body and some artwork for it.
-    Body::Rigid pendulumBody(MassProperties(1.0, Vec3(0), Inertia(1)));
-    pendulumBody.addDecoration(Transform(), 
-                               DecorativeSphere(Real(0.1)).setColor(Red));
+        auto local0 = Vec3(0, -1, 0);
+        auto local1 = Vec3(0, 1, 0);
 
-      MobilizedBody::Pin pendulum0(matter.updGround(),{Rotation(eye), Vec3(0,-1,0)},
-                                   pendulumBody,{Rotation(eye),Vec3(0, 1, 0)});
-      MobilizedBody::Pin pendulum1(pendulum0,
-                                   Transform(Rotation(halfPi), Vec3(0,-1,0)),
-                                   pendulumBody,
-                                   Transform(Rotation(eye), Vec3(0, 1, 0)));
+        MobilizedBody::Pin body0(matter.updGround(), {Rotation(q0), local0}, pendulumBody, {Rotation(q1),local1});
+        MobilizedBody::Pin body1(body0, Transform(Rotation(q2), local0), pendulumBody,Transform(Rotation(q3), local1));
+        MobilizedBody::Pin body2(body1, Transform(Rotation(q4), local0), pendulumBody,Transform(Rotation(q5), local1));
+        MobilizedBody::Pin body3(body1, Transform(Rotation(q6), local0), pendulumBody,Transform(Rotation(q7), local1));
+        MobilizedBody::Pin body4(body3, Transform(Rotation(q0), local0), pendulumBody,Transform(Rotation(q1), local1));
+
+        std::vector<MobilizedBody::Pin*> bodyList = {&body0, &body1, &body2, &body3, &body4};
 
 
-    // Visualize with default options; ask for a report every 1/30 of a second
-    // to match the Visualizer's default 30 frames per second rate.
-    Visualizer viz(system);
-    system.addEventReporter(new Visualizer::Reporter(viz, Real(1./30)));
-    
-    // Initialize the system and state.
-    
-    system.realizeTopology();
-    State state = system.getDefaultState();
-    pendulum0.setOneQ(state, 0, 0);
-    pendulum1.setOneQ(state, 0, 0);
+        Visualizer viz(system);
+        system.addEventReporter(new Visualizer::Reporter(viz, Real(1./30)));
 
-    system.realize(state);
-      std::cout << pendulum0.getBodyRotation(state).convertRotationToQuaternion() << "\n";
-      std::cout << pendulum1.getBodyRotation(state).convertRotationToQuaternion() << "\n";
-      std::cout << pendulum0.getBodyOriginLocation(state) << "\n";
-      std::cout << pendulum1.getBodyOriginLocation(state) << "\n";
-    viz.report(state);
-    RungeKuttaMersonIntegrator integ(system);
-    TimeStepper ts(system, integ);
-    ts.initialize(state);
-    ts.stepTo(10000000.0);
-  } catch (const std::exception& e) {
-      std::cout << "ERROR: " << e.what() << std::endl;
-      return 1;
-  } catch (...) {
-      std::cout << "UNKNOWN EXCEPTION\n";
-      return 1;
-  }
+        // Initialize the system and state.
 
+        system.realizeTopology();
+        State state = system.getDefaultState();
+        for (auto body : bodyList) {
+            body->setOneQ(state, 0, Pi/4);
+        }
+
+        system.realize(state);
+        for (auto body : bodyList) {
+            std:: cout << body->getBodyRotation(state).convertRotationToQuaternion() << "\n";
+        }
+        std::cout << "--------------\n";
+        for (auto body : bodyList) {
+            std:: cout << body->getBodyOriginLocation(state) << "\n";
+        }
+
+        viz.report(state);
+        RungeKuttaMersonIntegrator integ(system);
+        TimeStepper ts(system, integ);
+        ts.initialize(state);
+        ts.stepTo(10000000.0);
+    } catch (const std::exception& e) {
+        std::cout << "ERROR: " << e.what() << std::endl;
+        return 1;
+    } catch (...) {
+        std::cout << "UNKNOWN EXCEPTION\n";
+        return 1;
+    }
     return 0;
 }
