@@ -53,7 +53,7 @@ int main() {
         MultibodySystem system;
         SimbodyMatterSubsystem matter(system);
         GeneralForceSubsystem forces(system);
-        Force::UniformGravity gravity(forces, matter, Vec3(0, Real(0.0), 0));
+        Force::UniformGravity gravity(forces, matter, Vec3(0, Real(10.0), 0));
         Body::Rigid pendulumBody(MassProperties(1.0, Vec3(0), Inertia(1)));
         if (enableVis) {
             pendulumBody.addDecoration(Transform(),DecorativeSphere(Real(0.1)).setColor(Red));
@@ -101,6 +101,10 @@ int main() {
         for (auto body : bodyList) {
             std:: cout << body->getBodyOriginVelocity(state) << "\n";
         }
+        std::cout << "--------------\n";
+        std::cout << "Kinetic Energy: " << system.calcKineticEnergy(state) << "\n";
+        std::cout << "Potential Energy: " << system.calcPotentialEnergy(state) << "\n";
+
         if (enableVis) {
             viz->report(state);
             RungeKuttaMersonIntegrator integ(system);
