@@ -79,73 +79,11 @@ int main() {
     pendulum1b.setOneQ(state, 0, Pi/4);
 
     system.realize(state);
-    const Vector lambda = state.getMultipliers();
-    Vector_<SpatialVec> consBodyForcesInG;
-    Vector              consMobForces;
-    matter.calcConstraintForcesFromMultipliers(state, -lambda, consBodyForcesInG,
-        consMobForces);
-    const int nb = matter.getNumBodies();
-    Vector_<SpatialVec> forcesAtMInG;
-    matter.calcMobilizerReactionForces(state, forcesAtMInG);
-
-    // The above method returns reactions *on the child body* at the outboard
-    // mobilizer frame M (that is, the frame fixed on the child body). 
-    // Calculate the same reactions, but *on the parent body* and at the 
-    // inboard mobilizer frame F (that is, the frame fixed on the parent body). 
-    // This is done by shifting the reaction forces across the mobilizer from 
-    // M to F, and negating.
-    // Note that for the example here the mobilizers aren't translating so
-    // the origins Mo and Fo are identical. Nevertheless we're using the
-    // generic code here that should work for any system.
-
-    Vector_<SpatialVec> forcesAtFInG(nb); // to hold the result
-    forcesAtFInG[0] = -forcesAtMInG[0]; // Ground is "welded" at origin
-    for (MobilizedBodyIndex i(1); i < matter.getNumBodies(); ++i) {
-        const MobilizedBody& body   = matter.getMobilizedBody(i);
-        const MobilizedBody& parent = body.getParentMobilizedBody();
-        // Want to shift negated reaction by p_MF_G, the vector from M
-        // to F across the mobilizer, expressed in Ground. We can get p_FM, 
-        // then re-express in Ground for the shift and negate.
-        const Vec3& p_FM = body.getMobilizerTransform(state).p();
-        const Rotation& R_PF = body.getInboardFrame(state).R(); // In parent.
-        const Rotation& R_GP = parent.getBodyTransform(state).R();
-        Rotation R_GF   =   R_GP*R_PF;  // F frame orientation in Ground.
-        Vec3     p_MF_G = -(R_GF*p_FM); // Re-express and negate shift vector.
-        forcesAtFInG[i] = -shiftForceBy(forcesAtMInG[i], p_MF_G);
-    }
-
-    const MobodIndex p1x = pendulum1.getMobilizedBodyIndex();
-    const MobodIndex p1bx = pendulum1b.getMobilizedBodyIndex();
-    const Rotation& R_G1 = pendulum1.getBodyTransform(state).R();
-    const Rotation& R_G1b = pendulum1b.getBodyTransform(state).R();
-
-    // This time shift the child reactions from the mobilizer frames M to the
-    // child body frames B so we can compare with the constraint forces that
-    // are returned at the child body frame.
-    Vector_<SpatialVec> forcesAtBInG(nb);
-    for (MobodIndex i(0); i < nb; ++i) {
-        const Mobod& body = matter.getMobilizedBody(i);
-        const Vec3&  p_BM = body.getOutboardFrame(state).p();
-        const Rotation& R_GB = body.getBodyTransform(state).R();
-        forcesAtBInG[i] = shiftForceFromTo(forcesAtMInG[i],
-                                           R_GB*p_BM, Vec3(0));
-    }
-
     viz.report(state);
     RungeKuttaMersonIntegrator integ(system);
     TimeStepper ts(system, integ);
     ts.initialize(state);
     ts.stepTo(1000.0);
-    state = integ.getState();
-    system.realize(state);
-    matter.calcMobilizerReactionForces(state, forcesAtMInG);
-    const Transform& X_GP = pendulum1.getBodyTransform(state);
-    ts.stepTo(Real(1.2));
-    state = integ.getState();
-    system.realize(state);
-    matter.calcMobilizerReactionForces(state, forcesAtMInG);
-    std::cout << "FM_G=" << forcesAtMInG << "\n";
-
   } catch (const std::exception& e) {
       std::cout << "ERROR: " << e.what() << std::endl;
       return 1;
