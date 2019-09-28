@@ -35,7 +35,13 @@ using namespace SimTK;
 using std::cout; using std::endl;
 
 int main() {
-  try {   
+  try {
+      Quaternion q0(-0.1504133023, -0.7202261496,  0.6643972918,  0.1312492688);
+      Quaternion q1(-0.8802997333,  -0.4219333635,  -0.1958447339, -0.09321725385);
+      Quaternion q2(0.1707965794, -0.1900937466, -0.1176534344, -0.9596095901);
+      Quaternion q3(0.3201724846,  0.7169894904,  0.3068382102, -0.5378345131);
+      Quaternion eye(1, 0, 0, 0);
+      Quaternion halfPi(0.7071067691, 0.7071067691, 0, 0);
     // Create the system, with subsystems for the bodies and some forces.
     MultibodySystem system;
     SimbodyMatterSubsystem matter(system);
@@ -51,16 +57,12 @@ int main() {
     pendulumBody.addDecoration(Transform(), 
                                DecorativeSphere(Real(0.1)).setColor(Red));
 
-    // Add an instance of the body to the multibody system by connecting
-    // it to Ground via a pin mobilizer.
-    MobilizedBody::Pin pendulum1(matter.updGround(), 
-                                Transform(/*x45,*/Vec3(0,-1,0)), 
-                                pendulumBody, 
-                                Transform(Vec3(0, 1, 0)));
-    MobilizedBody::Pin pendulum1b(pendulum1, 
-                                Transform(/*x45,*/Vec3(0,-1,0)), 
-                                pendulumBody, 
-                                Transform(Vec3(0, 1, 0)));
+      MobilizedBody::Pin pendulum0(matter.updGround(),{Rotation(eye), Vec3(0,-1,0)},
+                                   pendulumBody,{Rotation(eye),Vec3(0, 1, 0)});
+      MobilizedBody::Pin pendulum1(pendulum0,
+                                   Transform(Rotation(halfPi), Vec3(0,-1,0)),
+                                   pendulumBody,
+                                   Transform(Rotation(eye), Vec3(0, 1, 0)));
 
 
     // Visualize with default options; ask for a report every 1/30 of a second
@@ -72,18 +74,19 @@ int main() {
     
     system.realizeTopology();
     State state = system.getDefaultState();
-    pendulum1.setOneQ(state, 0, Pi/4);
-    //pendulum1.setOneU(state, 0, 1.0); // initial velocity 1 rad/sec
-
-    //pendulum1b.setOneU(state, 0, 1.0); // initial velocity 1 rad/sec
-    pendulum1b.setOneQ(state, 0, Pi/4);
+    pendulum0.setOneQ(state, 0, 0);
+    pendulum1.setOneQ(state, 0, 0);
 
     system.realize(state);
+      std::cout << pendulum0.getBodyRotation(state).convertRotationToQuaternion() << "\n";
+      std::cout << pendulum1.getBodyRotation(state).convertRotationToQuaternion() << "\n";
+      std::cout << pendulum0.getBodyOriginLocation(state) << "\n";
+      std::cout << pendulum1.getBodyOriginLocation(state) << "\n";
     viz.report(state);
     RungeKuttaMersonIntegrator integ(system);
     TimeStepper ts(system, integ);
     ts.initialize(state);
-    ts.stepTo(1000.0);
+    ts.stepTo(10000000.0);
   } catch (const std::exception& e) {
       std::cout << "ERROR: " << e.what() << std::endl;
       return 1;
