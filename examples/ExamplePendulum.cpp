@@ -33,6 +33,9 @@
 
 using namespace SimTK;
 using std::cout; using std::endl;
+namespace {
+bool enableVis = false;
+}
 
 int main() {
     try {
@@ -52,7 +55,9 @@ int main() {
         GeneralForceSubsystem forces(system);
         Force::UniformGravity gravity(forces, matter, Vec3(0, Real(0.0), 0));
         Body::Rigid pendulumBody(MassProperties(1.0, Vec3(0), Inertia(1)));
-        pendulumBody.addDecoration(Transform(),DecorativeSphere(Real(0.1)).setColor(Red));
+        if (enableVis) {
+            pendulumBody.addDecoration(Transform(),DecorativeSphere(Real(0.1)).setColor(Red));
+        }
 
         auto local0 = Vec3(0, -1, 0);
         auto local1 = Vec3(0, 1, 0);
@@ -65,9 +70,11 @@ int main() {
 
         std::vector<MobilizedBody::Pin*> bodyList = {&body0, &body1, &body2, &body3, &body4};
 
-
-        Visualizer viz(system);
-        system.addEventReporter(new Visualizer::Reporter(viz, Real(1./30)));
+        Visualizer* viz = nullptr;
+        if (enableVis) {
+            viz = new Visualizer(system);
+            system.addEventReporter(new Visualizer::Reporter(*viz, Real(1./30)));
+        }
 
         // Initialize the system and state.
 
@@ -85,12 +92,13 @@ int main() {
         for (auto body : bodyList) {
             std:: cout << body->getBodyOriginLocation(state) << "\n";
         }
-
-        viz.report(state);
-        RungeKuttaMersonIntegrator integ(system);
-        TimeStepper ts(system, integ);
-        ts.initialize(state);
-        ts.stepTo(10000000.0);
+        if (enableVis) {
+            viz->report(state);
+            RungeKuttaMersonIntegrator integ(system);
+            TimeStepper ts(system, integ);
+            ts.initialize(state);
+            ts.stepTo(10000000.0);
+        }
     } catch (const std::exception& e) {
         std::cout << "ERROR: " << e.what() << std::endl;
         return 1;
