@@ -45,7 +45,7 @@ int main() {
     Rotation x45(Pi/4, XAxis);
     Rotation y45(Pi/4, YAxis);
     Rotation z45(Pi/4, ZAxis);
-    Force::UniformGravity gravity(forces, matter, Vec3(0, Real(-9.8), 0));
+    Force::UniformGravity gravity(forces, matter, Vec3(0, Real(0.0), 0));
     // Create the body and some artwork for it.
     Body::Rigid pendulumBody(MassProperties(1.0, Vec3(0), Inertia(1)));
     pendulumBody.addDecoration(Transform(), 
