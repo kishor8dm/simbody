@@ -82,6 +82,7 @@ int main() {
         State state = system.getDefaultState();
         for (auto body : bodyList) {
             body->setOneQ(state, 0, Pi/4);
+            body->setOneU(state, 0, 1);
         }
 
         system.realize(state);
@@ -91,6 +92,14 @@ int main() {
         std::cout << "--------------\n";
         for (auto body : bodyList) {
             std:: cout << body->getBodyOriginLocation(state) << "\n";
+        }
+        std::cout << "--------------\n";
+        for (auto body : bodyList) {
+            std:: cout << body->getBodyAngularVelocity(state) << "\n";
+        }
+        std::cout << "--------------\n";
+        for (auto body : bodyList) {
+            std:: cout << body->getBodyOriginVelocity(state) << "\n";
         }
         if (enableVis) {
             viz->report(state);
