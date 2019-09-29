@@ -49,18 +49,18 @@ int main() {
         Quaternion q7(-0.06702885032, -0.7941805124,   -0.17857261,  0.5769716501);
         Quaternion eye(1, 0, 0, 0);
         Quaternion halfPi(0.7071067691, 0.7071067691, 0, 0);
+        auto local0 = Vec3(0, -1, 0);
+        auto local1 = Vec3(0, 1, 0);
+        auto com_offset = Vec3{0.1, 0.2, 0.3};
         // Create the system, with subsystems for the bodies and some forces.
         MultibodySystem system;
         SimbodyMatterSubsystem matter(system);
         GeneralForceSubsystem forces(system);
         Force::UniformGravity gravity(forces, matter, Vec3(0, Real(10.0), 0));
-        Body::Rigid pendulumBody(MassProperties(1.0, Vec3(0), Inertia(1)));
+        Body::Rigid pendulumBody(MassProperties(10.0, com_offset, Inertia(10)));
         if (enableVis) {
             pendulumBody.addDecoration(Transform(),DecorativeSphere(Real(0.1)).setColor(Red));
         }
-
-        auto local0 = Vec3(0, -1, 0);
-        auto local1 = Vec3(0, 1, 0);
 
         MobilizedBody::Pin body0(matter.updGround(), {Rotation(q0), local0}, pendulumBody, {Rotation(q1),local1});
         MobilizedBody::Pin body1(body0, Transform(Rotation(q2), local0), pendulumBody,Transform(Rotation(q3), local1));
