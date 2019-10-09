@@ -44,13 +44,14 @@ int main() {
     Quaternion q1(-0.8802997333,  -0.4219333635,  -0.1958447339, -0.09321725385);
     Quaternion q2(0.1707965794, -0.1900937466, -0.1176534344, -0.9596095901);
     Quaternion q3(0.3201724846,  0.7169894904,  0.3068382102, -0.5378345131);
+    Quaternion q4{-0.2366251647, 0.3815343678,  0.845472455,   0.28916502};
+    Quaternion q5{-0.8099961877, 0.09318492562,  0.5701901317, -0.1005286202};
+    Quaternion q6{0.09452920407, -0.6611310244, -0.5389370918, -0.5133388638};
+    Quaternion q7{-0.06702885032, -0.7941805124,   -0.17857261,  0.5769716501};
+    Quaternion halfPi(0.7071067691, 0.7071067691, 0, 0);
+    Quaternion eye(1, 0, 0, 0);
 
-
-    // Add gravity as a force element.
-    Rotation x45(Pi/4, XAxis);
-    Rotation y45(Pi/4, YAxis);
-    Rotation z45(Pi/4, ZAxis);
-    Force::UniformGravity gravity(forces, matter, Vec3(0, Real(-9.8), 0));
+    Force::UniformGravity gravity(forces, matter, Vec3(0, Real(-10.0), 0));
     Body::Rigid pendulumBody(MassProperties(1.0, Vec3(0), Inertia(1)));
 
     MobilizedBody::Pin pendulum0(matter.updGround(),
@@ -61,10 +62,14 @@ int main() {
                                 Transform(Rotation(q2), Vec3(0,-1,0)),
                                 pendulumBody, 
                                 Transform(Rotation(q3), Vec3(0, 1, 0)));
+    MobilizedBody::Pin pendulum2(pendulum1,
+                               Transform(Rotation(q4), Vec3(0,-1,0)),
+                               pendulumBody,
+                               Transform(Rotation(q5), Vec3(0, 1, 0)));
     system.realizeTopology();
     State state = system.getDefaultState();
-    pendulum0.setOneQ(state, 0, Pi/4);
-    pendulum1.setOneQ(state, 0, Pi/4);
+    pendulum0.setOneQ(state, 0, 1);
+    pendulum1.setOneQ(state, 0, 1);
 
     pendulum0.setOneU(state, 0, Pi/4);
     pendulum1.setOneU(state, 0, Pi/4);
@@ -72,6 +77,9 @@ int main() {
     system.realize(state);
     std::cout << pendulum0.getBodyRotation(state).convertRotationToQuaternion() << "\n";
     std::cout << pendulum1.getBodyRotation(state).convertRotationToQuaternion() << "\n";
+    std::cout << pendulum0.getBodyOriginLocation(state) << "\n";
+    std::cout << pendulum1.getBodyOriginLocation(state) << "\n";
+
   } catch (const std::exception& e) {
       std::cout << "ERROR: " << e.what() << std::endl;
       return 1;
