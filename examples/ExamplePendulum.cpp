@@ -51,8 +51,13 @@ int main() {
     Quaternion halfPi(0.7071067691, 0.7071067691, 0, 0);
     Quaternion eye(1, 0, 0, 0);
 
+    Mat33 I(1,0,0,0,2,0,0,0,3);
+    Rotation Q1(q1);
+    I = (~Q1) * I * Q1;
+    std::cout<<I<< "\n";
+
     Force::UniformGravity gravity(forces, matter, Vec3(0, Real(-10.0), 0));
-    Body::Rigid pendulumBody(MassProperties(1.0, Vec3(0), Inertia(1)));
+    Body::Rigid pendulumBody(MassProperties(10.0, Vec3(0), Inertia(I)));
 
     MobilizedBody::Pin pendulum0(matter.updGround(),
                                 Transform(Rotation(q0), Vec3(0,-1,0)),
@@ -68,17 +73,20 @@ int main() {
                                Transform(Rotation(q5), Vec3(0, 1, 0)));
     system.realizeTopology();
     State state = system.getDefaultState();
-    pendulum0.setOneQ(state, 0, 1);
-    pendulum1.setOneQ(state, 0, 1);
+    pendulum0.setOneQ(state, 0, Pi/4);
+    pendulum1.setOneQ(state, 0, Pi/4);
+    pendulum2.setOneQ(state, 0, Pi/4);
 
-    pendulum0.setOneU(state, 0, Pi/4);
-    pendulum1.setOneU(state, 0, Pi/4);
+    pendulum0.setOneU(state, 0, 1);
+    pendulum1.setOneU(state, 0, 1);
+    pendulum2.setOneU(state, 0, 1);
 
     system.realize(state);
     std::cout << pendulum0.getBodyRotation(state).convertRotationToQuaternion() << "\n";
     std::cout << pendulum1.getBodyRotation(state).convertRotationToQuaternion() << "\n";
     std::cout << pendulum0.getBodyOriginLocation(state) << "\n";
     std::cout << pendulum1.getBodyOriginLocation(state) << "\n";
+    std::cout << state.getUDot() << "\n";
 
   } catch (const std::exception& e) {
       std::cout << "ERROR: " << e.what() << std::endl;
